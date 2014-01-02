@@ -10,7 +10,6 @@ find_package(catkin REQUIRED
              COMPONENTS
                 geometry_msgs
                 kdl_parser
-                moveit_msgs
                 orocos_kdl
                 roscpp
                 tf
