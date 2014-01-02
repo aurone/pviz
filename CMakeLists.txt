@@ -1,30 +1,38 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(pviz)
 
-#Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-set(ROS_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Release)
 
-rosbuild_init()
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
 
-rosbuild_add_boost_directories()
+find_package(catkin REQUIRED
+             COMPONENTS
+                geometry_msgs
+                kdl_parser
+                moveit_msgs
+                orocos_kdl
+                roscpp
+                tf
+                trajectory_msgs
+                visualization_msgs)
+include_directories(${catkin_INCLUDE_DIRS})
 
-#rosbuild_add_compile_flags(-g)
+include_directories(include)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+catkin_package(INCLUDE_DIRS include
+               CATKIN_DEPENDS
+                   geometry_msgs
+                   kdl_parser
+                   orocos_kdl
+                   tf
+                   trajectory_msgs
+                   visualization_msgs
+               DEPENDS Boost
+               LIBRARIES ${PROJECT_NAME})
 
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+add_library(${PROJECT_NAME} src/pviz.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
-rosbuild_add_library(pviz src/pviz.cpp)
-
-rosbuild_add_executable(pvizExample src/pviz_example.cpp)
-target_link_libraries(pvizExample pviz)
-
-
-
+add_executable(pvizExample src/pviz_example.cpp)
+target_link_libraries(pvizExample ${PROJECT_NAME})
