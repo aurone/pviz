@@ -27,7 +27,7 @@ catkin_package(INCLUDE_DIRS include
                    tf
                    trajectory_msgs
                    visualization_msgs
-               DEPENDS Boost
+               DEPENDS boost
                LIBRARIES ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME} src/pviz.cpp)
