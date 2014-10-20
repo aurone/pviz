@@ -27,22 +27,14 @@
 
 enum{ RIGHT, LEFT };
 
-class PViz
-{
+class PVizGeneric {
+
   public:
-
-    /* \brief constructor takes in the desired topic name */    
-    PViz(const std::string &ns = std::string());
-
-    ~PViz();
-
     /* \brief set reference frame of visualization markers */
     void setReferenceFrame(std::string frame) {reference_frame_ = frame;};
     
     /* \brief get reference frame used for the visualizations */
     std::string getReferenceFrame() {return reference_frame_;};
-
-    void getMaptoRobotTransform(double x, double y, double theta, KDL::Frame &frame);
 
     void publishMarker(visualization_msgs::Marker& marker);
 
@@ -50,39 +42,7 @@ class PViz
 
     void deleteVisualizations(std::string ns, int max_id);
 
-    bool parseCSVFile(std::string filename, int num_cols, std::vector<std::vector<double> > &data);
-
-    /**************** Robot Meshes ****************/
-   
-    void visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, std::vector<double> &base_pos, double torso_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
-
-    void visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
-
-    void visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, std::string title);
- 
-    bool visualizeTrajectoryFromFile(std::string filename, bool use_embedded_materials = false);
-
-    void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle);
-
-    void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
-    /**************** Shapes, Text & Lines ****************/
-
-    /* \brief visualize a pose (sphere, arrow, string of text) */
-    void visualizePose(const std::vector<double> &pose, std::string text);
-
-    void visualizePose(const geometry_msgs::Pose &pose, std::string text);
-
-    void visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id);
-
-    /* \brief visualize a list of poses (sphere, arrow, pose index number) */
-    void visualizePoses(const std::vector<std::vector<double> > &poses);
- 
-    /* \brief visualize cuboids */
-    void visualizeObstacles(const std::vector<std::vector<double> > &obstacles);
-   
-    void visualize3DPath(std::vector<std::vector<double> > &dpath);
-
-     /* \brief display a sphere */
+    /* \brief display a sphere */
     void visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id);
 
     void visualizeSphere(std::vector<double> pose, int color, std::string text, double radius);
@@ -111,6 +71,65 @@ class PViz
     /* \brief visualize a mesh where mesh_resource is the path to the mesh using the URI used by resource_retriever package */
     void visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id);
 
+    /* \brief visualize a pose (sphere, arrow, string of text) */
+    void visualizePose(const std::vector<double> &pose, std::string text);
+
+    void visualizePose(const geometry_msgs::Pose &pose, std::string text);
+
+    void visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id);
+
+    /* \brief visualize a list of poses (sphere, arrow, pose index number) */
+    void visualizePoses(const std::vector<std::vector<double> > &poses);
+
+    void visualizePoints(const std::vector<std::vector<double> > &points, double hue, std::string ns);
+
+    PVizGeneric(const std::string &ns = std::string());
+
+    ~PVizGeneric() {};
+
+  protected:
+    std::string reference_frame_;
+    ros::NodeHandle nh_;
+    ros::Publisher marker_array_publisher_;
+    ros::Publisher marker_publisher_;
+
+    visualization_msgs::MarkerArray marker_array_;
+    visualization_msgs::Marker marker_;
+};
+
+class PViz : public PVizGeneric
+{
+  public:
+
+    /* \brief constructor takes in the desired topic name */    
+    PViz(const std::string &ns = std::string());
+
+    ~PViz();
+
+    void getMaptoRobotTransform(double x, double y, double theta, KDL::Frame &frame);
+
+    bool parseCSVFile(std::string filename, int num_cols, std::vector<std::vector<double> > &data);
+
+    /**************** Robot Meshes ****************/
+   
+    void visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, std::vector<double> &base_pos, double torso_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
+
+    void visualizeRobot(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
+
+    void visualizeRobotWithTitle(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, std::string title);
+ 
+    bool visualizeTrajectoryFromFile(std::string filename, bool use_embedded_materials = false);
+
+    void visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint> &rpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &lpath, std::vector<trajectory_msgs::JointTrajectoryPoint> &bpath, int throttle);
+
+    void visualizeGripper(const geometry_msgs::Pose &pose, double hue, std::string ns, int id, bool open);
+    /**************** Shapes, Text & Lines ****************/
+ 
+    /* \brief visualize cuboids */
+    void visualizeObstacles(const std::vector<std::vector<double> > &obstacles);
+   
+    void visualize3DPath(std::vector<std::vector<double> > &dpath);
+
     /* \brief visualizes a triangle list; if psychadelic is true then each triangle has one of each red, green, and blue vertices (Gil Jones) */
     void visualizeMeshTriangles(const std::vector<geometry_msgs::Point>& vertices, const std::vector<int>& triangles, const geometry_msgs::PoseStamped& pose, int color, std::string ns, int id, bool psychadelic);
 
@@ -133,16 +152,9 @@ class PViz
 
     visualization_msgs::MarkerArray getRobotMarkerMsg(std::vector<double> &jnt0_pos, std::vector<double> &jnt1_pos, BodyPose &body_pos, double hue, std::string ns, int id, bool use_embedded_materials = false);
 
-  private:
-
-    ros::NodeHandle nh_;
-    ros::Publisher marker_array_publisher_;
-    ros::Publisher marker_publisher_;
+  protected: 
 
     int num_joints_;
-
-    visualization_msgs::MarkerArray marker_array_;
-    visualization_msgs::Marker marker_;
 
     std::vector<std::string> arm_joint_names_;
     std::vector<std::string> arm_link_names_;
@@ -162,8 +174,8 @@ class PViz
     KDL::Tree kdl_tree_;
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_rsolver_;
     std::vector<KDL::ChainFkSolverPos_recursive *> fk_lsolver_;
-    std::string reference_frame_;
 
+  private:
     /* \brief initialize the KDL chain for the robot arm */
     bool initKDLChain();
 
@@ -181,7 +193,7 @@ class PViz
 
     /* \brief print KDL chain */
     void printKDLChain(std::string name, KDL::Chain &chain);
-
+  
     /* \brief multiply two poses */
     void multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, geometry_msgs::Pose &c);
 };

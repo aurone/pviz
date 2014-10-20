@@ -56,6 +56,25 @@ void HSVtoRGB( double *r, double *g, double *b, double h, double s, double v )
 	}
 }
 
+PVizGeneric::PVizGeneric(const std::string &ns)
+{
+  if(ns.size() > 0)
+  {
+    std::stringstream ss;
+    ss << "/" << ns << "/visualization_marker_array";
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>(ss.str(), 500);
+    ss.str(std::string());
+    ss << "/" << ns << "/visualization_marker";
+    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>(ss.str(), 1000);
+  }
+  else
+  {
+    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 500);
+    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+  }
+  ROS_INFO("Visualization topics advertised!");
+}
+
 PViz::PViz(const std::string &ns)
 {
   num_joints_ = 8; //arm + torso
@@ -116,21 +135,6 @@ PViz::PViz(const std::string &ns)
   {
     ROS_ERROR("[pviz] Failed to initiliaze the KDL chain. This should exit but instead it will crash."); 
     fflush(stdout);
-  }
-
-  if(ns.size() > 0)
-  {
-    std::stringstream ss;
-    ss << "/" << ns << "/visualization_marker_array";
-    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>(ss.str(), 500);
-    ss.str(std::string());
-    ss << "/" << ns << "/visualization_marker";
-    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>(ss.str(), 1000);
-  }
-  else
-  {
-    marker_array_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 500);
-    marker_publisher_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
   }
 }
 
@@ -378,18 +382,18 @@ void PViz::getCubeMsg(geometry_msgs::Pose &pose, std::vector<double> &dim, std::
   marker.lifetime = ros::Duration(1000.0);
 }
 
-void PViz::publishMarker(visualization_msgs::Marker& marker)
+void PVizGeneric::publishMarker(visualization_msgs::Marker& marker)
 {
   marker_publisher_.publish(marker);
 }
 
-void PViz::publishMarkerArray(visualization_msgs::MarkerArray &marker_array)
+void PVizGeneric::publishMarkerArray(visualization_msgs::MarkerArray &marker_array)
 {
+  //printf("Publishing marker array of size %d to topic %s!", marker_array.markers.size(), marker_array_publisher_.getTopic().c_str()); fflush(stdout);
   marker_array_publisher_.publish(marker_array);
-  usleep(1000);
 }
 
-void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
+void PVizGeneric::visualizePoses(const std::vector<std::vector<double> > &poses)
 {
   marker_array_.markers.clear();
   marker_array_.markers.resize(poses.size()*3);
@@ -470,7 +474,54 @@ void PViz::visualizePoses(const std::vector<std::vector<double> > &poses)
   marker_array_publisher_.publish(marker_array_);
 }
 
-void PViz::visualizePose(const std::vector<double> &pose, std::string text)
+void PVizGeneric::visualizePoints(const std::vector<std::vector<double> > &points, double hue, std::string ns)
+{
+  double r=0,g=0,b=0;
+  visualization_msgs::Marker marker;
+  HSVtoRGB(&r, &g, &b, hue, 1.0, 1.0);
+
+  marker.header.stamp = ros::Time::now();
+  marker.header.frame_id = reference_frame_;
+  marker.ns = ns;
+  marker.id = 0;
+  marker.type = visualization_msgs::Marker::POINTS;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.pose.position.z = 0;
+  marker.scale.x = 0.01;
+  marker.scale.y = 0.01;
+  marker.scale.z = 1;
+  marker.color.r = r;
+  marker.color.g = g;
+  marker.color.b = b;
+  marker.color.a = 1.0;
+  marker.points.resize(points.size());
+  marker.colors.resize(points.size());
+  for(int i = 0; i < (int) points.size(); i++){
+    if(points[i].size() < 3) continue;
+    marker.points[i].x = points[i][0];
+    marker.points[i].y = points[i][1];
+    marker.points[i].z = points[i][2];
+    if(points[i].size() >= 4){
+      double rr,gg,bb;
+      HSVtoRGB(&rr, &gg, &bb, points[i][3], 1.0, 1.0);
+      marker.colors[i].r = rr;
+      marker.colors[i].g = gg;
+      marker.colors[i].b = bb;
+      marker.colors[i].a = 1.0;
+    } else {
+      marker.colors[i].r = r;
+      marker.colors[i].r = g;
+      marker.colors[i].r = b;
+      marker.colors[i].a = 1.0;
+    }
+  }
+  marker.lifetime = ros::Duration(0.0);
+  marker_publisher_.publish(marker);
+}
+
+void PVizGeneric::visualizePose(const std::vector<double> &pose, std::string text)
 {
   tf::Quaternion pose_quaternion;
   geometry_msgs::Pose pose_msg;
@@ -487,7 +538,7 @@ void PViz::visualizePose(const std::vector<double> &pose, std::string text)
   visualizePose(pose_msg, text);
 }
 
-void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text)
+void PVizGeneric::visualizePose(const geometry_msgs::Pose &pose, std::string text)
 {
   int mind = -1;
   marker_array_.markers.clear();
@@ -552,7 +603,7 @@ void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text)
   marker_array_publisher_.publish(marker_array_);
 }
 
-void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id)
+void PVizGeneric::visualizePose(const geometry_msgs::Pose &pose, std::string text, std::string frame_id)
 {
   int mind = -1;
   marker_array_.markers.clear();
@@ -569,13 +620,13 @@ void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text, std:
   marker_array_.markers[mind].id = 0;
   marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
   marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.125;
-  marker_array_.markers[mind].scale.y = 0.125;
-  marker_array_.markers[mind].scale.z = 0.125;
+  marker_array_.markers[mind].scale.x = 0.10;
+  marker_array_.markers[mind].scale.y = 0.025;
+  marker_array_.markers[mind].scale.z = 0.025;
   marker_array_.markers[mind].color.r = 0.0;
-  marker_array_.markers[mind].color.g = 0.7;
-  marker_array_.markers[mind].color.b = 0.6;
-  marker_array_.markers[mind].color.a = 0.7;
+  marker_array_.markers[mind].color.g = 0.0;
+  marker_array_.markers[mind].color.b = 1.0;
+  marker_array_.markers[mind].color.a = 1.0;
   marker_array_.markers[mind].lifetime = ros::Duration(500.0);
 
   mind++;
@@ -583,12 +634,12 @@ void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text, std:
   marker_array_.markers[mind].header.frame_id = frame_id;
   marker_array_.markers[mind].ns = text;
   marker_array_.markers[mind].id = 1;
-  marker_array_.markers[mind].type = visualization_msgs::Marker::SPHERE;
+  marker_array_.markers[mind].type = visualization_msgs::Marker::CUBE;
   marker_array_.markers[mind].action = visualization_msgs::Marker::ADD;
   marker_array_.markers[mind].pose = pose;
-  marker_array_.markers[mind].scale.x = 0.10;
+  marker_array_.markers[mind].scale.x = 0.05;
   marker_array_.markers[mind].scale.y = 0.10;
-  marker_array_.markers[mind].scale.z = 0.10;
+  marker_array_.markers[mind].scale.z = 0.05;
   marker_array_.markers[mind].color.r = 1.0;
   marker_array_.markers[mind].color.g = 0.0;
   marker_array_.markers[mind].color.b = 0.6;
@@ -617,7 +668,7 @@ void PViz::visualizePose(const geometry_msgs::Pose &pose, std::string text, std:
   marker_array_publisher_.publish(marker_array_);
 }
 
-void PViz::visualizeSphere(std::vector<double> pose, int color, std::string text, double radius)
+void PVizGeneric::visualizeSphere(std::vector<double> pose, int color, std::string text, double radius)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -645,7 +696,7 @@ void PViz::visualizeSphere(std::vector<double> pose, int color, std::string text
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id)
+void PVizGeneric::visualizeSphere(double x, double y, double z, double radius, int hue, std::string ns, int id)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -671,7 +722,7 @@ void PViz::visualizeSphere(double x, double y, double z, double radius, int hue,
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, double radius)
+void PVizGeneric::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, double radius)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -704,7 +755,7 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int c
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, std::vector<double> &radius)
+void PVizGeneric::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text, std::vector<double> &radius)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -737,7 +788,7 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int c
   }
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text)
+void PVizGeneric::visualizeSpheres(const std::vector<std::vector<double> > &pose, int color, std::string text)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -770,7 +821,7 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, int c
   marker_array_publisher_.publish(marker_array);
 }
 
-void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string text)
+void PVizGeneric::visualizeSpheres(const std::vector<std::vector<double> > &pose, const std::vector<int> &hue, std::string text)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -807,7 +858,7 @@ void PViz::visualizeSpheres(const std::vector<std::vector<double> > &pose, const
   marker_array_publisher_.publish(marker_array);
 }
 
-void PViz::deleteVisualizations(std::string ns, int max_id)
+void PVizGeneric::deleteVisualizations(std::string ns, int max_id)
 {
   marker_array_.markers.clear();
   marker_array_.markers.resize(max_id);
@@ -993,7 +1044,7 @@ void PViz::visualizeDetailedStates(const std::vector<std::vector<double> > &stat
   marker_array_publisher_.publish(marker_array);
 }
 
-void PViz::visualizeLine(const std::vector<geometry_msgs::Point> points, std::string ns, int id, int hue, double thickness)
+void PVizGeneric::visualizeLine(const std::vector<geometry_msgs::Point> points, std::string ns, int id, int hue, double thickness)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -1022,7 +1073,7 @@ void PViz::visualizeLine(const std::vector<geometry_msgs::Point> points, std::st
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, int hue)
+void PVizGeneric::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, int hue)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -1050,7 +1101,7 @@ void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, std::vector<double> color, double size)
+void PVizGeneric::visualizeText(geometry_msgs::Pose pose, std::string text, std::string ns, int id, std::vector<double> color, double size)
 {
   visualization_msgs::Marker marker;
 
@@ -1078,7 +1129,7 @@ void PViz::visualizeText(geometry_msgs::Pose pose, std::string text, std::string
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeCube(geometry_msgs::PoseStamped pose, int color, std::string ns, int id, std::vector<double> dim)
+void PVizGeneric::visualizeCube(geometry_msgs::PoseStamped pose, int color, std::string ns, int id, std::vector<double> dim)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
@@ -1113,7 +1164,7 @@ void PViz::visualizeCube(geometry_msgs::PoseStamped pose, int color, std::string
   marker_publisher_.publish(marker);
 }
 
-void PViz::visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color,
+void PVizGeneric::visualizeMesh(const std::string& mesh_resource, const geometry_msgs::PoseStamped& pose, int color,
                          std::string ns, int id)
 {
 	double r = 0.0, g = 0.0, b = 0.0;
@@ -1627,7 +1678,7 @@ void PViz::visualizeTrajectory(std::vector<trajectory_msgs::JointTrajectoryPoint
   marker_array_publisher_.publish(ma);
 }
 
-void PViz::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int hue, std::string ns, int id, double radius)
+void PVizGeneric::visualizeSpheres(const std::vector<geometry_msgs::Point>  &poses, int hue, std::string ns, int id, double radius)
 {
   if(poses.empty())
   {
@@ -1903,7 +1954,7 @@ void PViz::multiply(const geometry_msgs::Pose &a, const geometry_msgs::Pose &b, 
   tf::poseTFToMsg(btc, c);
 }
 
-void PViz::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
+void PVizGeneric::visualizeText(double x, double y, double z, double size, std::string text, int hue, std::string ns, int id)
 {
   double r=0,g=0,b=0;
   visualization_msgs::Marker marker;
