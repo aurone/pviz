@@ -4,31 +4,37 @@ project(pviz)
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(catkin REQUIRED
-             COMPONENTS
-                geometry_msgs
-                kdl_parser
-                orocos_kdl
-                roscpp
-                tf
-                trajectory_msgs
-                visualization_msgs)
+    COMPONENTS
+        geometry_msgs
+        kdl_parser
+        roscpp
+        tf
+        trajectory_msgs
+        visualization_msgs)
+
+find_package(orocos_kdl REQUIRED)
+
+catkin_package(
+    INCLUDE_DIRS
+        include
+    CATKIN_DEPENDS
+        geometry_msgs
+        kdl_parser
+        tf
+        trajectory_msgs
+        visualization_msgs
+    DEPENDS
+        boost
+        orocos_kdl
+    LIBRARIES
+        ${PROJECT_NAME})
+
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
-
+include_directories(${orocos_kdl_INCLUDE_DIRS})
 include_directories(include)
-
-catkin_package(INCLUDE_DIRS include
-               CATKIN_DEPENDS
-                   geometry_msgs
-                   kdl_parser
-                   orocos_kdl
-                   tf
-                   trajectory_msgs
-                   visualization_msgs
-               DEPENDS boost
-               LIBRARIES ${PROJECT_NAME})
 
 add_library(${PROJECT_NAME} src/pviz.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})

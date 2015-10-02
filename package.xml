@@ -1,28 +1,20 @@
-<package>
+<package format="2">
   <name>pviz</name>
   <version>0.0.0</version>
   <description>The pviz package</description>
-  <author email="bcohen@seas.upenn.edu">Benjamin Cohen</author>
   <maintainer email="andrew.dornbush@gmail.com">Andrew Dornbush</maintainer>
   <license>BSD</license>
+
+  <author email="bcohen@seas.upenn.edu">Benjamin Cohen</author>
   
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>boost</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>kdl_parser</build_depend>
-  <build_depend>orocos_kdl</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>trajectory_msgs</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-
-  <run_depend>boost</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>kdl_parser</run_depend>
-  <run_depend>orocos_kdl</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>trajectory_msgs</run_depend>
-  <run_depend>visualization_msgs</run_depend>
+  <depend>boost</depend>
+  <depend>geometry_msgs</depend>
+  <depend>kdl_parser</depend>
+  <depend>orocos_kdl</depend>
+  <depend>roscpp</depend>
+  <depend>tf</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>visualization_msgs</depend>
 </package>
